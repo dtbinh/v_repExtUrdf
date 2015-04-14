@@ -48,21 +48,43 @@
 
 #include "commonFunctions.h"
 
+/**
+ * An element is a <visual>, <intertial> or <collision> element
+ */
+class urdfVisual
+{
+    public:
+        urdfVisual();
+
+        // Position
+        float xyz[3], rpy[3];
+
+        // For geometry
+        float box_size[3];				//If all the coordinates are zero do not create the object
+        float sphere_size[3];			//If all the coordinates are zero do not create the object
+        float cylinder_size[3];			//If all the coordinates are zero do not create the object
+        float rgba[4];                  // a is ignored
+        float mesh_scaling[3];
+
+        std::string meshFilename;
+        std::string meshFilename_alt;
+        simInt meshExtension;
+
+        // The simulator identifier
+        simInt n;
+};
+
 class urdfLink
 {
 public:
+    std::vector<urdfVisual> visuals;
+    void addVisual();
+    urdfVisual &currentVisual();
+
     //Variables Inertial
 	float inertial_xyz[3];
 	float inertial_rpy[3];
 	bool inertiaPresent;
-
-	float visual_xyz[3];
-	float visual_rpy[3];
-	float visual_box_size[3];				//If all the coordinates are zero do not create the object
-	float visual_sphere_size[3];			//If all the coordinates are zero do not create the object
-	float visual_cylinder_size[3];			//If all the coordinates are zero do not create the object
-	float visual_rgba[4]; // a is ignored
-	float visual_mesh_scaling[3];
 
 	//Variables Collision
 	float collision_xyz[3];
@@ -86,9 +108,6 @@ public:
 	std::string child;
 	simInt nChild;
 
-	std::string visual_meshFilename;
-	std::string visual_meshFilename_alt;
-	simInt visual_meshExtension;
 	std::string collision_meshFilename;
 	std::string collision_meshFilename_alt;
 	simInt collision_meshExtension;

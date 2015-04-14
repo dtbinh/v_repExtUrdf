@@ -32,6 +32,22 @@
 // The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc.
 
 #include "link.h"
+	
+urdfVisual::urdfVisual()
+{
+		//Variables Visual				
+		 xyz[0]= 0;				xyz[1]= 0;				xyz[2]= 0;
+		 rpy[0]= 0;				rpy[1]= 0;				rpy[2]= 0;
+		 box_size[0]= 0;			box_size[1]= 0;			box_size[2]= 0;	
+		 sphere_size[0]= 0;		sphere_size[1]= 0;		sphere_size[2]= 0;
+		 cylinder_size[0]= 0;    cylinder_size[1]= 0;		cylinder_size[2]= 0;
+		 rgba[0]=0.4f;			rgba[1]=0.4f;			rgba[2]=0.4f;	rgba[3]=0.0f;
+		 mesh_scaling[0]=1.0f;
+		 mesh_scaling[1]=1.0f;
+		 mesh_scaling[2]=1.0f;
+
+         n = -1;
+}
 
 urdfLink::urdfLink()
 {
@@ -39,17 +55,6 @@ urdfLink::urdfLink()
 		//Variables Inertial
 		 inertial_xyz[0]= 0;			inertial_xyz[1]= 0;				inertial_xyz[2]= 0;
 		 inertial_rpy[0]= 0;			inertial_rpy[1]= 0;				inertial_rpy[2]= 0;
-		
-		//Variables Visual				
-		 visual_xyz[0]= 0;				visual_xyz[1]= 0;				visual_xyz[2]= 0;
-		 visual_rpy[0]= 0;				visual_rpy[1]= 0;				visual_rpy[2]= 0;
-		 visual_box_size[0]= 0;			visual_box_size[1]= 0;			visual_box_size[2]= 0;	
-		 visual_sphere_size[0]= 0;		visual_sphere_size[1]= 0;		visual_sphere_size[2]= 0;
-		 visual_cylinder_size[0]= 0;    visual_cylinder_size[1]= 0;		visual_cylinder_size[2]= 0;
-		 visual_rgba[0]=0.4f;			visual_rgba[1]=0.4f;			visual_rgba[2]=0.4f;	visual_rgba[3]=0.0f;
-		 visual_mesh_scaling[0]=1.0f;
-		 visual_mesh_scaling[1]=1.0f;
-		 visual_mesh_scaling[2]=1.0f;
 
 		//Variables Collision
 		 collision_xyz[0]= 0;			 collision_xyz[1]= 0;			collision_xyz[2]= 0;
@@ -71,6 +76,16 @@ urdfLink::urdfLink()
 		nLinkCollision=-1;
 }
 
+void urdfLink::addVisual()
+{
+    visuals.push_back(urdfVisual());
+}
+    
+urdfVisual &urdfLink::currentVisual()
+{
+    return visuals[visuals.size()-1];
+}
+
 urdfLink::~urdfLink()
 {
 }
@@ -80,7 +95,7 @@ void urdfLink::setPosition(std::string gazebo_xyz,std::string choose)
 	if(choose == "inertial")
 		stringToArray(inertial_xyz,gazebo_xyz.c_str());
 	if(choose == "visual")
-		stringToArray(visual_xyz,gazebo_xyz.c_str());
+		stringToArray(currentVisual().xyz,gazebo_xyz.c_str());
 	if(choose == "collision")
 		stringToArray(collision_xyz,gazebo_xyz.c_str());
 }
@@ -90,7 +105,7 @@ void urdfLink::setRotation(std::string gazebo_rpy,std::string choose)
 	if(choose == "inertial")
 		stringToArray(inertial_rpy,gazebo_rpy.c_str());
 	if(choose == "visual")
-		stringToArray(visual_rpy,gazebo_rpy.c_str());
+		stringToArray(currentVisual().rpy,gazebo_rpy.c_str());
 	if(choose == "collision")
 		stringToArray(collision_rpy,gazebo_rpy.c_str());
 }
@@ -100,7 +115,7 @@ void urdfLink::setBox(std::string gazebo_size,std::string choose)
 {
 	if(choose == "visual")
 	{
-		stringToArray(visual_box_size, gazebo_size);
+		stringToArray(currentVisual().box_size, gazebo_size);
 	}
 	if(choose == "collision")
 	{
@@ -111,11 +126,12 @@ void urdfLink::setSphere(std::string gazebo_radius,std::string choose)
 {
 	if(choose == "visual")
 	{
-		stringToArray(visual_sphere_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_radius);
+		stringToArray(currentVisual().sphere_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_radius);
 
-		visual_sphere_size[0] = visual_sphere_size[0] * 2; //Radius to bounding box conversion
-		visual_sphere_size[1] = visual_sphere_size[1] * 2; //Radius to bounding box conversion
-		visual_sphere_size[2] = visual_sphere_size[2] * 2; //Radius to bounding box conversion
+        urdfVisual &visual = currentVisual();
+		visual.sphere_size[0] = visual.sphere_size[0] * 2; //Radius to bounding box conversion
+		visual.sphere_size[1] = visual.sphere_size[1] * 2; //Radius to bounding box conversion
+		visual.sphere_size[2] = visual.sphere_size[2] * 2; //Radius to bounding box conversion
 
 	}
 	if(choose == "collision")
@@ -131,10 +147,11 @@ void urdfLink::setCylinder(std::string gazebo_radius,std::string gazebo_length,s
 {
 	if(choose == "visual")
 	{
-		stringToArray(visual_cylinder_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_length);
+		stringToArray(currentVisual().cylinder_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_length);
+        urdfVisual &visual = currentVisual();
 
-		visual_cylinder_size[0] = visual_cylinder_size[0] * 2; //Radius to bounding box conversion
-		visual_cylinder_size[1] = visual_cylinder_size[1] * 2; //Radius to bounding box conversion
+		visual.cylinder_size[0] = visual.cylinder_size[0] * 2; //Radius to bounding box conversion
+		visual.cylinder_size[1] = visual.cylinder_size[1] * 2; //Radius to bounding box conversion
 	
 	}
 	if(choose == "collision")
@@ -149,7 +166,7 @@ void urdfLink::setCylinder(std::string gazebo_radius,std::string gazebo_length,s
 
 void urdfLink::setColor(std::string color)
 {
-	stringToArray(visual_rgba,color);
+	stringToArray(currentVisual().rgba,color);
 }
 
 void urdfLink::setMass(std::string gazebo_mass)
@@ -204,9 +221,10 @@ void urdfLink::setMeshFilename(std::string packagePath,std::string meshFilename,
 
 	if(choose == "visual")
 	{
-		visual_meshFilename = meshFilename;
-		visual_meshFilename_alt = meshFilename_alt;
-		visual_meshExtension = nExtension;
+        urdfVisual &visual = currentVisual();
+		visual.meshFilename = meshFilename;
+		visual.meshFilename_alt = meshFilename_alt;
+		visual.meshExtension = nExtension;
 	}
 	if(choose == "collision")
 	{
@@ -222,42 +240,46 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
 	std::string txt("Creating link '"+name+"'...");
 	printToConsole(txt.c_str());
 
-	//visual
-	if(!visual_meshFilename.empty())
-	{
-		std::string fname(visual_meshFilename);
-		bool exists=true;
-		bool useAlt=false;
-		if (!simDoesFileExist(fname.c_str()))
-		{
-			fname=visual_meshFilename_alt;
-			exists=simDoesFileExist(fname.c_str());
-			useAlt=true;
-		}
+    // Visuals
+    std::vector<urdfVisual>::iterator it;
+    for (it=visuals.begin(); it!=visuals.end(); it++) {
+        urdfVisual &visual = *it;
+        
+        if(!visual.meshFilename.empty())
+        {
+            std::string fname(visual.meshFilename);
+            bool exists=true;
+            bool useAlt=false;
+            if (!simDoesFileExist(fname.c_str()))
+            {
+                fname=visual.meshFilename_alt;
+                exists=simDoesFileExist(fname.c_str());
+                useAlt=true;
+            }
 
-		if (!exists)
-			printToConsole("ERROR: the mesh file could not be found.");
-		else
-			nLinkVisual = simImportShape(visual_meshExtension,fname.c_str(),0,0.0001f,1.0);
+            if (!exists)
+                printToConsole("ERROR: the mesh file could not be found.");
+            else
+                visual.n = simImportShape(visual.meshExtension,fname.c_str(),0,0.0001f,1.0);
 
-		if (nLinkVisual == -1)
-		{
-			if (!useAlt)
-				txt="ERROR: failed to create the mesh '"+visual_meshFilename+"' with extension type "+boost::lexical_cast<std::string>(visual_meshExtension);
-			else
-				txt="ERROR: failed to create the mesh '"+visual_meshFilename+"' or '"+visual_meshFilename_alt+"' with extension type "+boost::lexical_cast<std::string>(visual_meshExtension);
-			printToConsole(txt.c_str());
-		}
-		else
-			nLinkVisual=scaleShapeIfRequired(nLinkVisual,visual_mesh_scaling);
-	}
-	else if (!isArrayEmpty(visual_sphere_size))
-		nLinkVisual = simCreatePureShape( 1,1+2+16, visual_sphere_size, mass, NULL);
-	else if (!isArrayEmpty(visual_cylinder_size))
-		nLinkVisual = simCreatePureShape( 2,1+2+16, visual_cylinder_size, mass, NULL);
-	else if (!isArrayEmpty(visual_box_size))
-		nLinkVisual = simCreatePureShape( 0,1+2+16, visual_box_size, mass, NULL);
-
+            if (!visual.n)
+            {
+                if (!useAlt)
+                    txt="ERROR: failed to create the mesh '"+visual.meshFilename+"' with extension type "+boost::lexical_cast<std::string>(visual.meshExtension);
+                else
+                    txt="ERROR: failed to create the mesh '"+visual.meshFilename+"' or '"+visual.meshFilename_alt+"' with extension type "+boost::lexical_cast<std::string>(visual.meshExtension);
+                printToConsole(txt.c_str());
+            }
+            else
+                visual.n = scaleShapeIfRequired(visual.n,visual.mesh_scaling);
+        }
+        else if (!isArrayEmpty(visual.sphere_size))
+            visual.n = simCreatePureShape( 1,1+2+16, visual.sphere_size, mass, NULL);
+        else if (!isArrayEmpty(visual.cylinder_size))
+            visual.n = simCreatePureShape( 2,1+2+16, visual.cylinder_size, mass, NULL);
+        else if (!isArrayEmpty(visual.box_size))
+            visual.n = simCreatePureShape( 0,1+2+16, visual.box_size, mass, NULL);
+    }
 
 	//collision
 	if(!collision_meshFilename.empty())
@@ -288,12 +310,13 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
 		else
 		{
 			nLinkCollision=scaleShapeIfRequired(nLinkCollision,collision_mesh_scaling);
-			if (createVisualIfNone&&(nLinkVisual==-1))
+			if (createVisualIfNone&&(visuals.size()==0))
 			{ // We create a visual from the collision shape (before it gets morphed hereafter):
 				simRemoveObjectFromSelection(sim_handle_all,-1);
 				simAddObjectToSelection(sim_handle_single,nLinkCollision);
 				simCopyPasteSelectedObjects();
-				nLinkVisual=simGetObjectLastSelection();
+                addVisual();
+                currentVisual().n = simGetObjectLastSelection();
 			}
 			int p;
 			int convInts[5]={1,500,200,0,0}; // 3rd value from 100 to 500 on 5/2/2014
@@ -350,34 +373,65 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
 		}
 	}
 
-	if (createVisualIfNone&&(nLinkVisual==-1)&&(nLinkCollision!=-1))
+	if (createVisualIfNone&&(visuals.size()==0)&&(nLinkCollision!=-1))
 	{ // We create a visual from the collision shape (meshes were handled earlier):
+        addVisual();
+        urdfVisual &visual = currentVisual();
 		simRemoveObjectFromSelection(sim_handle_all,-1);
 		simAddObjectToSelection(sim_handle_single,nLinkCollision);
 		simCopyPasteSelectedObjects();
-		nLinkVisual=simGetObjectLastSelection();
-		simSetObjectIntParameter(nLinkVisual,3003,1); // we make it static since only visual
-		simSetObjectIntParameter(nLinkVisual,3004,0); // we make it non-respondable since only visual
+		visual.n=simGetObjectLastSelection();
+		simSetObjectIntParameter(visual.n,3003,1); // we make it static since only visual
+		simSetObjectIntParameter(visual.n,3004,0); // we make it non-respondable since only visual
 	}
 
 	// Set the respondable mask:
 	if (nLinkCollision!=-1)
 		simSetObjectIntParameter(nLinkCollision,3019,0xff00); // colliding with everything except with other objects in that tree hierarchy
 
-	// Set the names, visibility, etc.:
+    // Grouping shapes
+    const float specularDiffuse[3]={0.3f,0.3f,0.3f};
+    simInt *shapes = new simInt[visuals.size()];
+    int validShapes = 0;
+    for (unsigned int i=0; i<visuals.size(); i++) {
+        urdfVisual &visual = visuals[i];
+        if (visual.n!=-1) {
+            simSetShapeColor(visual.n,NULL,0,visual.rgba);
+            //simSetShapeColor(visual.n,NULL,1,specularDiffuse);
+            //simSetShapeColor(visual.n,NULL,2,specularDiffuse);
+			
+            C7Vector frame;
+			frame.X.set(visual.xyz);
+			frame.Q=getQuaternionFromRpy(visual.rpy);
+			
+            C7Vector initVisualFrame;
+			simGetObjectPosition(visual.n,-1,initVisualFrame.X.data);
+			C3Vector euler;
+			simGetObjectOrientation(visual.n,-1,euler.data);
+			initVisualFrame.Q.setEulerAngles(euler);
+			
+            C7Vector x(frame*initVisualFrame);
+
+			simSetObjectPosition(visual.n,-1,x.X.data);
+			simSetObjectOrientation(visual.n,-1,x.Q.getEulerAngles().data);
+
+            shapes[validShapes++] = visual.n;
+        }
+    }
+    std::cout << std::flush;
+    if (validShapes > 1) {
+        nLinkVisual = simGroupShapes(shapes, validShapes);
+    } else if (validShapes == 1) {
+        nLinkVisual = shapes[0];
+    }
+	
+    // Set the names, visibility, etc.:
 	if (nLinkVisual!=-1)
 	{
 		setVrepObjectName(nLinkVisual,std::string(name+"_visual").c_str());
 		const float specularDiffuse[3]={0.3f,0.3f,0.3f};
-		simSetShapeColor(nLinkVisual,NULL,0,visual_rgba);
-		simSetShapeColor(nLinkVisual,NULL,1,specularDiffuse);
-		simSetShapeColor(nLinkVisual,NULL,2,specularDiffuse);
 		if (nLinkCollision!=-1)
 		{ // if we have a collision object, we attach the visual object to it, then forget the visual object
-			C7Vector visualFrame;
-			visualFrame.X.set(visual_xyz);
-			visualFrame.Q=getQuaternionFromRpy(visual_rpy);
-
 			C7Vector collisionFrame;
 			collisionFrame.X.set(collision_xyz);
 			collisionFrame.Q=getQuaternionFromRpy(collision_rpy);
@@ -393,7 +447,7 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
 			simGetObjectOrientation(nLinkCollision,-1,euler.data);
 			initCollisionFrame.Q.setEulerAngles(euler);
 
-			C7Vector x(initCollisionFrame.getInverse()*collisionFrame.getInverse()*visualFrame*initVisualFrame);
+			C7Vector x(initCollisionFrame.getInverse()*collisionFrame.getInverse());
 
 			simSetObjectPosition(nLinkVisual,-1,x.X.data);
 			simSetObjectOrientation(nLinkVisual,-1,x.Q.getEulerAngles().data);
@@ -406,7 +460,6 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
 		if (hideCollisionLinks)
 			simSetObjectIntParameter(nLinkCollision,10,256); // we "hide" that object in layer 9
 	}
-
 }
 
 int urdfLink::scaleShapeIfRequired(int shapeHandle,float scalingFactors[3])

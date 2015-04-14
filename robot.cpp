@@ -52,13 +52,11 @@ robot::robot(std::string filename,bool hideCollisionLinks,bool hideJoints,bool c
 	std::vector<int> allSensors;
 	for (int i=0;i<int(vLinks.size());i++)
 	{
-		if (vLinks[i]->nLinkVisual!=-1)
-		{
-			if (simGetObjectParent(vLinks[i]->nLinkVisual)==-1)
-				parentlessObjects.push_back(vLinks[i]->nLinkVisual);
-			allObjects.push_back(vLinks[i]->nLinkVisual);
-			allShapes.push_back(vLinks[i]->nLinkVisual);
-		}
+        if (simGetObjectParent(vLinks[i]->nLinkVisual)==-1)
+            parentlessObjects.push_back(vLinks[i]->nLinkVisual);
+        allObjects.push_back(vLinks[i]->nLinkVisual);
+        allShapes.push_back(vLinks[i]->nLinkVisual);
+
 		if (vLinks[i]->nLinkCollision!=-1)
 		{
 			if (simGetObjectParent(vLinks[i]->nLinkCollision)==-1)
@@ -339,9 +337,11 @@ void robot::readLinks()
 		}
 
 	    //VISUAL
-		tinyxml2::XMLElement* visualElement = linkElement->FirstChildElement("visual");
-		if(visualElement != NULL)
+		tinyxml2::XMLNode* visualElement = linkElement->FirstChildElement("visual");
+		while(visualElement != NULL)
 		{
+            Link->addVisual();
+
 			tinyxml2::XMLElement* visual_originElement = visualElement->FirstChildElement("origin");
 			if(visual_originElement != NULL)
 			{
@@ -361,7 +361,7 @@ void robot::readLinks()
 					if (visual_geometry_meshElement->Attribute("filename") != NULL)
 						Link->setMeshFilename(packagePath,visual_geometry_meshElement->Attribute("filename"),"visual");
 					if (visual_geometry_meshElement->Attribute("scale") != NULL)
-						stringToArray(Link->visual_mesh_scaling,visual_geometry_meshElement->Attribute("scale"));
+						stringToArray(Link->currentVisual().mesh_scaling,visual_geometry_meshElement->Attribute("scale"));
 				}
 				tinyxml2::XMLElement* visual_geometry_boxElement = visual_geometryElement->FirstChildElement("box");
 				if(visual_geometry_boxElement!=NULL)
@@ -391,6 +391,7 @@ void robot::readLinks()
 						Link->setColor(visual_geometry_colorElement->Attribute("rgba"));
 				}
 			}
+            visualElement = visualElement->NextSiblingElement();
 		}
 		//COLLISION
 		tinyxml2::XMLElement* collisionElement = linkElement->FirstChildElement("collision");
@@ -723,9 +724,14 @@ void robot::createLinks(bool hideCollisionLinks,bool convexDecomposeNonConvexCol
 			}
 			else
 			{
-				effectiveLinkHandle=Link->nLinkVisual;
-				linkDesiredConf.X.set(Link->visual_xyz);
-				linkDesiredConf.Q=getQuaternionFromRpy(Link->visual_rpy);
+				effectiveLinkHandle = Link->nLinkVisual;
+                if (effectiveLinkHandle != -1) {
+                    // Visual object position and orientation is already set in the Link
+                    float xyz[3] = {0,0,0};
+                    float rpy[3] = {0,0,0};
+                    linkDesiredConf.X.set(xyz);
+                    linkDesiredConf.Q=getQuaternionFromRpy(rpy);
+                }
 			}
 			simGetObjectPosition(effectiveLinkHandle,-1,linkInitialConf.X.data);
 			C3Vector euler;
@@ -840,7 +846,7 @@ void robot::createSensors()
 				}
 				if ((parentLinkIndex!=-1)&&(Sensor->nSensor!=-1))
 				{
-					if (vLinks.at(parentLinkIndex)->nLinkVisual!=-1)
+					if (vLinks.at(parentLinkIndex)->visuals.size()!=0)
 						simSetObjectParent(Sensor->nSensor,vLinks.at(parentLinkIndex)->nLinkVisual,true);
 					if (vLinks.at(parentLinkIndex)->nLinkCollision!=-1)
 						simSetObjectParent(Sensor->nSensor,vLinks.at(parentLinkIndex)->nLinkCollision,true);
