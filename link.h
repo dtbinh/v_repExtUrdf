@@ -29,7 +29,7 @@
 //
 // This file was automatically created for V-REP release V3.2.0 on Feb. 3rd 2015
 
-// The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc.
+// The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc and Martin Pecka.
 
 #pragma once
 
@@ -51,10 +51,10 @@
 /**
  * An element is a <visual>, <intertial> or <collision> element
  */
-class urdfVisual
+class urdfVisualOrCollision
 {
     public:
-        urdfVisual();
+        urdfVisualOrCollision();
 
         // Position
         float xyz[3], rpy[3];
@@ -77,23 +77,17 @@ class urdfVisual
 class urdfLink
 {
 public:
-    std::vector<urdfVisual> visuals;
+    std::vector<urdfVisualOrCollision> visuals;
+    std::vector<urdfVisualOrCollision> collisions;
     void addVisual();
-    urdfVisual &currentVisual();
+    urdfVisualOrCollision &currentVisual();
+    void addCollision();
+    urdfVisualOrCollision &currentCollision();
 
     //Variables Inertial
 	float inertial_xyz[3];
 	float inertial_rpy[3];
 	bool inertiaPresent;
-
-	//Variables Collision
-	float collision_xyz[3];
-	float collision_rpy[3];
-	float collision_box_size[3];				//If all the coordinates are zero do not create the object
-	float collision_sphere_size[3];			//If all the coordinates are zero do not create the object
-	float collision_cylinder_size[3];			//If all the coordinates are zero do not create the object
-	float collision_mesh_scaling[3];
-	
 
 	//Common variables
 	float inertia[9];
@@ -106,11 +100,7 @@ public:
 	simInt nParent;
 
 	std::string child;
-	simInt nChild;
-
-	std::string collision_meshFilename;
-	std::string collision_meshFilename_alt;
-	simInt collision_meshExtension;
+    simInt nChild;
 
 	simInt nLinkVisual;
 	simInt nLinkCollision;

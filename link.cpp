@@ -29,11 +29,11 @@
 //
 // This file was automatically created for V-REP release V3.2.0 on Feb. 3rd 2015
 
-// The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc.
+// The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc and Martin Pecka.
 
 #include "link.h"
 	
-urdfVisual::urdfVisual()
+urdfVisualOrCollision::urdfVisualOrCollision()
 {
 		//Variables Visual				
 		 xyz[0]= 0;				xyz[1]= 0;				xyz[2]= 0;
@@ -56,16 +56,6 @@ urdfLink::urdfLink()
 		 inertial_xyz[0]= 0;			inertial_xyz[1]= 0;				inertial_xyz[2]= 0;
 		 inertial_rpy[0]= 0;			inertial_rpy[1]= 0;				inertial_rpy[2]= 0;
 
-		//Variables Collision
-		 collision_xyz[0]= 0;			 collision_xyz[1]= 0;			collision_xyz[2]= 0;
-		 collision_rpy[0]= 0;			 collision_rpy[1]= 0;		    collision_rpy[2]= 0;	
-		 collision_box_size[0]= 0;		 collision_box_size[1]= 0;	    collision_box_size[2]= 0;	
-		 collision_sphere_size[0]= 0;	 collision_sphere_size[1]= 0;	collision_sphere_size[2]= 0;
-		 collision_cylinder_size[0]= 0;	 collision_cylinder_size[1]= 0;	collision_cylinder_size[2]= 0;
-		 collision_mesh_scaling[0]=1.0f;
-		 collision_mesh_scaling[1]=1.0f;
-		 collision_mesh_scaling[2]=1.0f;
-
 		 mass = 1.0f;
 		 inertia[8] = 0.0f; inertia[7] = 0; inertia[6] = 0; inertia[5] = 0; inertia[4] = 0.0f; inertia[3] = 0; inertia[2] = 0; inertia[1] = 0; inertia[0] = 0.0f;
 		inertiaPresent=false;
@@ -78,12 +68,22 @@ urdfLink::urdfLink()
 
 void urdfLink::addVisual()
 {
-    visuals.push_back(urdfVisual());
+    visuals.push_back(urdfVisualOrCollision());
 }
     
-urdfVisual &urdfLink::currentVisual()
+urdfVisualOrCollision &urdfLink::currentVisual()
 {
     return visuals[visuals.size()-1];
+}
+
+void urdfLink::addCollision()
+{
+    collisions.push_back(urdfVisualOrCollision());
+}
+
+urdfVisualOrCollision &urdfLink::currentCollision()
+{
+    return collisions[collisions.size()-1];
 }
 
 urdfLink::~urdfLink()
@@ -97,7 +97,7 @@ void urdfLink::setPosition(std::string gazebo_xyz,std::string choose)
 	if(choose == "visual")
 		stringToArray(currentVisual().xyz,gazebo_xyz.c_str());
 	if(choose == "collision")
-		stringToArray(collision_xyz,gazebo_xyz.c_str());
+        stringToArray(currentCollision().xyz,gazebo_xyz.c_str());
 }
 
 void urdfLink::setRotation(std::string gazebo_rpy,std::string choose)
@@ -107,7 +107,7 @@ void urdfLink::setRotation(std::string gazebo_rpy,std::string choose)
 	if(choose == "visual")
 		stringToArray(currentVisual().rpy,gazebo_rpy.c_str());
 	if(choose == "collision")
-		stringToArray(collision_rpy,gazebo_rpy.c_str());
+        stringToArray(currentCollision().rpy,gazebo_rpy.c_str());
 }
 
 
@@ -119,7 +119,7 @@ void urdfLink::setBox(std::string gazebo_size,std::string choose)
 	}
 	if(choose == "collision")
 	{
-		stringToArray(collision_box_size, gazebo_size);
+        stringToArray(currentCollision().box_size, gazebo_size);
 	}
 }
 void urdfLink::setSphere(std::string gazebo_radius,std::string choose)
@@ -128,7 +128,7 @@ void urdfLink::setSphere(std::string gazebo_radius,std::string choose)
 	{
 		stringToArray(currentVisual().sphere_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_radius);
 
-        urdfVisual &visual = currentVisual();
+        urdfVisualOrCollision &visual = currentVisual();
 		visual.sphere_size[0] = visual.sphere_size[0] * 2; //Radius to bounding box conversion
 		visual.sphere_size[1] = visual.sphere_size[1] * 2; //Radius to bounding box conversion
 		visual.sphere_size[2] = visual.sphere_size[2] * 2; //Radius to bounding box conversion
@@ -136,11 +136,12 @@ void urdfLink::setSphere(std::string gazebo_radius,std::string choose)
 	}
 	if(choose == "collision")
 	{
-		stringToArray(collision_sphere_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_radius);
+        stringToArray(currentCollision().sphere_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_radius);
 		
-		collision_sphere_size[0] = collision_sphere_size[0] * 2; //Radius to bounding box conversion
-		collision_sphere_size[1] = collision_sphere_size[1] * 2; //Radius to bounding box conversion
-		collision_sphere_size[2] = collision_sphere_size[2] * 2; //Radius to bounding box conversion
+        urdfVisualOrCollision &collision = currentCollision();
+        collision.sphere_size[0] = collision.sphere_size[0] * 2; //Radius to bounding box conversion
+        collision.sphere_size[1] = collision.sphere_size[1] * 2; //Radius to bounding box conversion
+        collision.sphere_size[2] = collision.sphere_size[2] * 2; //Radius to bounding box conversion
 	}
 }
 void urdfLink::setCylinder(std::string gazebo_radius,std::string gazebo_length,std::string choose)
@@ -148,7 +149,7 @@ void urdfLink::setCylinder(std::string gazebo_radius,std::string gazebo_length,s
 	if(choose == "visual")
 	{
 		stringToArray(currentVisual().cylinder_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_length);
-        urdfVisual &visual = currentVisual();
+        urdfVisualOrCollision &visual = currentVisual();
 
 		visual.cylinder_size[0] = visual.cylinder_size[0] * 2; //Radius to bounding box conversion
 		visual.cylinder_size[1] = visual.cylinder_size[1] * 2; //Radius to bounding box conversion
@@ -156,10 +157,11 @@ void urdfLink::setCylinder(std::string gazebo_radius,std::string gazebo_length,s
 	}
 	if(choose == "collision")
 	{
-		stringToArray(collision_cylinder_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_length);
+        stringToArray(currentCollision().cylinder_size,gazebo_radius+" "+gazebo_radius+" "+gazebo_length);
+        urdfVisualOrCollision &collision = currentCollision();
 
-		collision_cylinder_size[0] = collision_cylinder_size[0] * 2; //Radius to bounding box conversion
-		collision_cylinder_size[1] = collision_cylinder_size[1] * 2; //Radius to bounding box conversion
+        collision.cylinder_size[0] = collision.cylinder_size[0] * 2; //Radius to bounding box conversion
+        collision.cylinder_size[1] = collision.cylinder_size[1] * 2; //Radius to bounding box conversion
 		
 	}
 }
@@ -221,16 +223,17 @@ void urdfLink::setMeshFilename(std::string packagePath,std::string meshFilename,
 
 	if(choose == "visual")
 	{
-        urdfVisual &visual = currentVisual();
+        urdfVisualOrCollision &visual = currentVisual();
 		visual.meshFilename = meshFilename;
 		visual.meshFilename_alt = meshFilename_alt;
 		visual.meshExtension = nExtension;
 	}
 	if(choose == "collision")
 	{
-		collision_meshFilename = meshFilename;		
-		collision_meshFilename_alt = meshFilename_alt;
-		collision_meshExtension = nExtension;
+        urdfVisualOrCollision &collision = currentCollision();
+        collision.meshFilename = meshFilename;
+        collision.meshFilename_alt = meshFilename_alt;
+        collision.meshExtension = nExtension;
 	}
 }
 
@@ -241,9 +244,9 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
 	printToConsole(txt.c_str());
 
     // Visuals
-    std::vector<urdfVisual>::iterator it;
+    std::vector<urdfVisualOrCollision>::iterator it;
     for (it=visuals.begin(); it!=visuals.end(); it++) {
-        urdfVisual &visual = *it;
+        urdfVisualOrCollision &visual = *it;
         
         if(!visual.meshFilename.empty())
         {
@@ -281,139 +284,110 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
             visual.n = simCreatePureShape( 0,1+2+16, visual.box_size, mass, NULL);
     }
 
-	//collision
-	if(!collision_meshFilename.empty())
-	{ 	
-		std::string fname(collision_meshFilename);
-		bool exists=true;
-		bool useAlt=false;
-		if (!simDoesFileExist(fname.c_str()))
-		{
-			fname=collision_meshFilename_alt;
-			exists=simDoesFileExist(fname.c_str());
-			useAlt=true;
-		}
+    //collisions
+    for (it=collisions.begin(); it!=collisions.end(); it++) {
+        urdfVisualOrCollision &collision = *it;
 
-		if (!exists)
-			printToConsole("ERROR: the mesh file could not be found");
-		else
-			nLinkCollision = simImportShape(collision_meshExtension,fname.c_str(),0,0.0001f,1.0);
+        if(!collision.meshFilename.empty())
+        {
+            std::string fname(collision.meshFilename);
+            bool exists=true;
+            bool useAlt=false;
+            if (!simDoesFileExist(fname.c_str()))
+            {
+                fname=collision.meshFilename_alt;
+                exists=simDoesFileExist(fname.c_str());
+                useAlt=true;
+            }
 
-		if (nLinkCollision == -1)
-		{
-			if (!useAlt)
-				txt="ERROR: failed to create the mesh '"+collision_meshFilename+"' with extension type "+boost::lexical_cast<std::string>(collision_meshExtension);
-			else
-				txt="ERROR: failed to create the mesh '"+collision_meshFilename+"' or '"+collision_meshFilename_alt+"' with extension type "+boost::lexical_cast<std::string>(collision_meshExtension);
-			printToConsole(txt.c_str());
-		}
-		else
-		{
-			nLinkCollision=scaleShapeIfRequired(nLinkCollision,collision_mesh_scaling);
-			if (createVisualIfNone&&(visuals.size()==0))
-			{ // We create a visual from the collision shape (before it gets morphed hereafter):
-				simRemoveObjectFromSelection(sim_handle_all,-1);
-				simAddObjectToSelection(sim_handle_single,nLinkCollision);
-				simCopyPasteSelectedObjects();
-                addVisual();
-                currentVisual().n = simGetObjectLastSelection();
-			}
-			int p;
-			int convInts[5]={1,500,200,0,0}; // 3rd value from 100 to 500 on 5/2/2014
-			float convFloats[5]={100.0f,30.0f,0.25f,0.0f,0.0f};
-			if ( convexDecomposeNonConvexCollidables&&(simGetObjectIntParameter(nLinkCollision,3017,&p)>0)&&(p==0) )
-			{
-				int aux=1+4+8+16+64;
-				if (showConvexDecompositionDlg)
-					aux=1+2+8+16+64;
-				showConvexDecompositionDlg=false;
-				simConvexDecompose(nLinkCollision,aux,convInts,convFloats); // we generate convex shapes!
-			}
-			simSetObjectIntParameter(nLinkCollision,3003,!inertiaPresent); // we make it non-static if there is an inertia
-			simSetObjectIntParameter(nLinkCollision,3004,1); // we make it respondable since it is a collision object
-		}
+            if (!exists)
+                printToConsole("ERROR: the mesh file could not be found");
+            else
+                collision.n = simImportShape(collision.meshExtension,fname.c_str(),0,0.0001f,1.0);
 
-	}
-	else if (!isArrayEmpty(collision_sphere_size))
-		nLinkCollision = simCreatePureShape( 1,1+2+4+8+16*(!inertiaPresent), collision_sphere_size, mass, NULL);
-	else if (!isArrayEmpty(collision_cylinder_size))
-		nLinkCollision = simCreatePureShape( 2,1+2+4+8+16*(!inertiaPresent), collision_cylinder_size, mass, NULL);
-	else if (!isArrayEmpty(collision_box_size))
-		nLinkCollision = simCreatePureShape( 0,1+2+4+8+16*(!inertiaPresent), collision_box_size, mass, NULL);
+            if (collision.n == -1)
+            {
+                if (!useAlt)
+                    txt="ERROR: failed to create the mesh '"+collision.meshFilename+"' with extension type "+boost::lexical_cast<std::string>(collision.meshExtension);
+                else
+                    txt="ERROR: failed to create the mesh '"+collision.meshFilename+"' or '"+collision.meshFilename_alt+"' with extension type "+boost::lexical_cast<std::string>(collision.meshExtension);
+                printToConsole(txt.c_str());
+            }
+            else
+            {
+                collision.n=scaleShapeIfRequired(collision.n,collision.mesh_scaling);
+                int p;
+                int convInts[5]={1,500,200,0,0}; // 3rd value from 100 to 500 on 5/2/2014
+                float convFloats[5]={100.0f,30.0f,0.25f,0.0f,0.0f};
+                if ( convexDecomposeNonConvexCollidables&&(simGetObjectIntParameter(collision.n,3017,&p)>0)&&(p==0) )
+                {
+                    int aux=1+4+8+16+64;
+                    if (showConvexDecompositionDlg)
+                        aux=1+2+8+16+64;
+                    showConvexDecompositionDlg=false;
+                    simConvexDecompose(collision.n,aux,convInts,convFloats); // we generate convex shapes!
+                }
+                simSetObjectIntParameter(collision.n,3003,!inertiaPresent); // we make it non-static if there is an inertia
+                simSetObjectIntParameter(collision.n,3004,1); // we make it respondable since it is a collision object
+            }
 
-	// Inertia
-	if (inertiaPresent)
-	{
-		if (nLinkCollision==-1)
-		{ // we do not have a collision object. Let's create a dummy collision object, since inertias can't exist on their own in V-REP:
-			float dummySize[3]={0.05f,0.05f,0.05f};
-			nLinkCollision = simCreatePureShape( 1,1+2+4, dummySize, mass, NULL); // we make it non-respondable!
-		}
+        }
+        else if (!isArrayEmpty(collision.sphere_size))
+            collision.n = simCreatePureShape( 1,1+2+4+8+16*(!inertiaPresent), collision.sphere_size, mass, NULL);
+        else if (!isArrayEmpty(collision.cylinder_size))
+            collision.n = simCreatePureShape( 2,1+2+4+8+16*(!inertiaPresent), collision.cylinder_size, mass, NULL);
+        else if (!isArrayEmpty(collision.box_size))
+            collision.n = simCreatePureShape( 0,1+2+4+8+16*(!inertiaPresent), collision.box_size, mass, NULL);
 
+        // Set the respondable mask:
+        simSetObjectIntParameter(collision.n,3019,0xff00); // colliding with everything except with other objects in that tree hierarchy
+    }
 
-		C7Vector inertiaFrame;
-		inertiaFrame.X.set(inertial_xyz);
-		inertiaFrame.Q=getQuaternionFromRpy(inertial_rpy);
+    if (createVisualIfNone&&(visuals.size()==0)&&(collisions.size() > 0))
+    { // We create a visual from the collision shapes
+        for (it=collisions.begin(); it!=collisions.end(); it++) {
+            urdfVisualOrCollision &collision = *it;
+            simRemoveObjectFromSelection(sim_handle_all,-1);
+            simAddObjectToSelection(sim_handle_single,collision.n);
+            simCopyPasteSelectedObjects();
+            addVisual();
+            currentVisual().n = simGetObjectLastSelection();
+        }
+    }
 
-		C7Vector collisionFrame;
-		collisionFrame.X.set(collision_xyz);
-		collisionFrame.Q=getQuaternionFromRpy(collision_rpy);
+    if (inertiaPresent && (collisions.size()==0))
+    {
+        // we do not have a collision object. Let's create a dummy collision object, since inertias can't exist on their own in V-REP:
+        float dummySize[3]={0.05f,0.05f,0.05f};
+        addCollision();
+        currentCollision().n = simCreatePureShape( 1,1+2+4, dummySize, mass, NULL); // we make it non-respondable!
+    }
 
-		C4X4Matrix x((collisionFrame.getInverse()*inertiaFrame).getMatrix());
-		float i[12]={x.M(0,0),x.M(0,1),x.M(0,2),x.X(0),x.M(1,0),x.M(1,1),x.M(1,2),x.X(1),x.M(2,0),x.M(2,1),x.M(2,2),x.X(2)};
-		simSetShapeMassAndInertia(nLinkCollision,mass,inertia,C3Vector::zeroVector.data,i);
-		//std::cout << "Mass: " << mass << std::endl;
-	}
-	else
-	{
-		if (nLinkCollision!=-1)
-		{
-			std::string txt("ERROR: found a collision object without inertia data for link '"+ name+"'. Is that link meant to be static?");
-			printToConsole(txt.c_str());
-		}
-	}
-
-	if (createVisualIfNone&&(visuals.size()==0)&&(nLinkCollision!=-1))
-	{ // We create a visual from the collision shape (meshes were handled earlier):
-        addVisual();
-        urdfVisual &visual = currentVisual();
-		simRemoveObjectFromSelection(sim_handle_all,-1);
-		simAddObjectToSelection(sim_handle_single,nLinkCollision);
-		simCopyPasteSelectedObjects();
-		visual.n=simGetObjectLastSelection();
-		simSetObjectIntParameter(visual.n,3003,1); // we make it static since only visual
-		simSetObjectIntParameter(visual.n,3004,0); // we make it non-respondable since only visual
-	}
-
-	// Set the respondable mask:
-	if (nLinkCollision!=-1)
-		simSetObjectIntParameter(nLinkCollision,3019,0xff00); // colliding with everything except with other objects in that tree hierarchy
-
-    // Grouping shapes
+    // Grouping visuals
     const float specularDiffuse[3]={0.3f,0.3f,0.3f};
     simInt *shapes = new simInt[visuals.size()];
     int validShapes = 0;
     for (unsigned int i=0; i<visuals.size(); i++) {
-        urdfVisual &visual = visuals[i];
+        urdfVisualOrCollision &visual = visuals[i];
         if (visual.n!=-1) {
             simSetShapeColor(visual.n,NULL,0,visual.rgba);
-            //simSetShapeColor(visual.n,NULL,1,specularDiffuse);
-            //simSetShapeColor(visual.n,NULL,2,specularDiffuse);
-			
+            simSetShapeColor(visual.n,NULL,1,specularDiffuse);
+            simSetShapeColor(visual.n,NULL,2,specularDiffuse);
+
             C7Vector frame;
-			frame.X.set(visual.xyz);
-			frame.Q=getQuaternionFromRpy(visual.rpy);
-			
+            frame.X.set(visual.xyz);
+            frame.Q=getQuaternionFromRpy(visual.rpy);
+
             C7Vector initVisualFrame;
-			simGetObjectPosition(visual.n,-1,initVisualFrame.X.data);
-			C3Vector euler;
-			simGetObjectOrientation(visual.n,-1,euler.data);
-			initVisualFrame.Q.setEulerAngles(euler);
-			
+            simGetObjectPosition(visual.n,-1,initVisualFrame.X.data);
+            C3Vector euler;
+            simGetObjectOrientation(visual.n,-1,euler.data);
+            initVisualFrame.Q.setEulerAngles(euler);
+
             C7Vector x(frame*initVisualFrame);
 
-			simSetObjectPosition(visual.n,-1,x.X.data);
-			simSetObjectOrientation(visual.n,-1,x.Q.getEulerAngles().data);
+            simSetObjectPosition(visual.n,-1,x.X.data);
+            simSetObjectOrientation(visual.n,-1,x.Q.getEulerAngles().data);
 
             shapes[validShapes++] = visual.n;
         }
@@ -424,34 +398,88 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
     } else if (validShapes == 1) {
         nLinkVisual = shapes[0];
     }
+
+    // Grouping collisions
+    shapes = new simInt[collisions.size()];
+    validShapes = 0;
+    for (unsigned int i=0; i<collisions.size(); i++) {
+        urdfVisualOrCollision &collision = collisions[i];
+        if (collision.n!=-1) {
+            C7Vector frame;
+            frame.X.set(collision.xyz);
+            frame.Q=getQuaternionFromRpy(collision.rpy);
+
+            C7Vector initCollisionFrame;
+            simGetObjectPosition(collision.n,-1,initCollisionFrame.X.data);
+            C3Vector euler;
+            simGetObjectOrientation(collision.n,-1,euler.data);
+            initCollisionFrame.Q.setEulerAngles(euler);
+
+            C7Vector x(frame*initCollisionFrame);
+
+            simSetObjectPosition(collision.n,-1,x.X.data);
+            simSetObjectOrientation(collision.n,-1,x.Q.getEulerAngles().data);
+
+            shapes[validShapes++] = collision.n;
+        }
+    }
+    std::cout << std::flush;
+    if (validShapes > 1) {
+        nLinkCollision = simGroupShapes(shapes, validShapes);
+    } else if (validShapes == 1) {
+        nLinkCollision = shapes[0];
+    }
+
+	// Inertia
+	if (inertiaPresent)
+    {
+        C7Vector inertiaFrame;
+		inertiaFrame.X.set(inertial_xyz);
+		inertiaFrame.Q=getQuaternionFromRpy(inertial_rpy);
+
+		C7Vector collisionFrame;
+        //collisionFrame.X.set(collision_xyz);
+        //collisionFrame.Q=getQuaternionFromRpy(collision_rpy);
+
+        //C4X4Matrix x((collisionFrame.getInverse()*inertiaFrame).getMatrix());
+        C4X4Matrix x(inertiaFrame.getMatrix());
+		float i[12]={x.M(0,0),x.M(0,1),x.M(0,2),x.X(0),x.M(1,0),x.M(1,1),x.M(1,2),x.X(1),x.M(2,0),x.M(2,1),x.M(2,2),x.X(2)};
+		simSetShapeMassAndInertia(nLinkCollision,mass,inertia,C3Vector::zeroVector.data,i);
+		//std::cout << "Mass: " << mass << std::endl;
+	}
+	else
+	{
+        if (collisions.size() > 0)
+		{
+			std::string txt("ERROR: found a collision object without inertia data for link '"+ name+"'. Is that link meant to be static?");
+			printToConsole(txt.c_str());
+		}
+    }
 	
     // Set the names, visibility, etc.:
 	if (nLinkVisual!=-1)
 	{
 		setVrepObjectName(nLinkVisual,std::string(name+"_visual").c_str());
-		const float specularDiffuse[3]={0.3f,0.3f,0.3f};
+        //const float specularDiffuse[3]={0.3f,0.3f,0.3f};
 		if (nLinkCollision!=-1)
 		{ // if we have a collision object, we attach the visual object to it, then forget the visual object
-			C7Vector collisionFrame;
-			collisionFrame.X.set(collision_xyz);
-			collisionFrame.Q=getQuaternionFromRpy(collision_rpy);
 
-			C7Vector initVisualFrame;
-			simGetObjectPosition(nLinkVisual,-1,initVisualFrame.X.data);
-			C3Vector euler;
-			simGetObjectOrientation(nLinkVisual,-1,euler.data);
-			initVisualFrame.Q.setEulerAngles(euler);
-
-			C7Vector initCollisionFrame;
-			simGetObjectPosition(nLinkCollision,-1,initCollisionFrame.X.data);
+            C3Vector euler;
+            C7Vector collisionFrame;
+            simGetObjectPosition(nLinkCollision,-1,collisionFrame.X.data);
 			simGetObjectOrientation(nLinkCollision,-1,euler.data);
-			initCollisionFrame.Q.setEulerAngles(euler);
+            collisionFrame.Q.setEulerAngles(euler);
 
-			C7Vector x(initCollisionFrame.getInverse()*collisionFrame.getInverse());
+            C7Vector visualFrame;
+            simGetObjectPosition(nLinkVisual,-1,visualFrame.X.data);
+            simGetObjectOrientation(nLinkVisual,-1,euler.data);
+            visualFrame.Q.setEulerAngles(euler);
 
-			simSetObjectPosition(nLinkVisual,-1,x.X.data);
-			simSetObjectOrientation(nLinkVisual,-1,x.Q.getEulerAngles().data);
-			simSetObjectParent(nLinkVisual,nLinkCollision,0);
+            C7Vector x(collisionFrame.getInverse()*visualFrame);
+
+            simSetObjectPosition(nLinkVisual,-1,x.X.data);
+            simSetObjectOrientation(nLinkVisual,-1,x.Q.getEulerAngles().data);
+            simSetObjectParent(nLinkVisual,nLinkCollision,0);
 		}
 	}
 	if (nLinkCollision!=-1)
