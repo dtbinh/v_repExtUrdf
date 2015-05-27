@@ -35,10 +35,33 @@
 #include <bitset>
 #include <string>
 
-robot::robot(std::string filename,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl): filenameAndPath(filename)
+
+robot::robot(std::string filename,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl)
 {
-	printToConsole("URDF import operation started.");
-	openFile();
+    printToConsole("URDF import operation started.");
+    openFile(filename);
+    this->initRobotFromDoc(hideCollisionLinks, hideJoints, convexDecomposeNonConvexCollidables, createVisualIfNone, showConvexDecompositionDlg, centerAboveGround, makeModel, noSelfCollision, positionCtrl);
+}
+
+robot::robot(std::string urdf,std::string packagePath,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl): packagePath(packagePath)
+{
+    printToConsole("URDF import operation started.");
+    openString(urdf);
+    this->initRobotFromDoc(hideCollisionLinks, hideJoints, convexDecomposeNonConvexCollidables, createVisualIfNone, showConvexDecompositionDlg, centerAboveGround, makeModel, noSelfCollision, positionCtrl);
+}
+
+void robot::initRobotFromDoc(bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl)
+{
+    robotElement = doc.FirstChildElement("robot");
+    if(robotElement==NULL)
+    {
+        printToConsole("ERROR: there is no robot in the file.");
+        return;
+    }
+
+    //Save the robot's name
+    name=robotElement->Attribute("name");
+
 	readJoints();
 	readLinks();
 	readSensors();
@@ -189,34 +212,33 @@ robot::~robot()
 		delete vSensors[i];
 }
 
-void robot::openFile()
+void robot::openString(std::string urdf)
+{
+    //The URDF is directly passed as a string
+    if(doc.Parse(urdf.c_str())!=tinyxml2::XML_NO_ERROR)
+    {
+        //something went wrong
+        printToConsole("ERROR: The given string is not a valid URDF document.");
+        return;
+    }
+}
+
+void robot::openFile(std::string filenameAndPath)
 { 
-	//Open the file
-	if(doc.LoadFile((char*)filenameAndPath.c_str())!=tinyxml2::XML_NO_ERROR)
-	{
-	    //something went wrong
-		printToConsole("ERROR: file couldn't be opened.");
-		return;
-	}
+    //Open the file
+    if(doc.LoadFile((char*)filenameAndPath.c_str())!=tinyxml2::XML_NO_ERROR)
+    {
+        //something went wrong
+        printToConsole("ERROR: file couldn't be opened.");
+        return;
+    }
 
-
-	robotElement = doc.FirstChildElement("robot");
-	if(robotElement==NULL)
-	{
-		printToConsole("ERROR: there is no robot in the file.");
-		return;
-	}
 	//Set the path to the package
 	//TODO  we could try to read the manifiest to be sure this is the correct path to the package
 	int cutPackagePath = filenameAndPath.find_last_of("/");
 	packagePath=filenameAndPath.substr(0,cutPackagePath);
 	cutPackagePath = packagePath.find_last_of("/");
 	packagePath=packagePath.substr(0,cutPackagePath);  //I do it twice to get  N:/drcsim-1.3/models/ so I can replace it for package://
-	
-
-	//Save the robot's name
-	name=robotElement->Attribute("name");
-
 }
 
 void robot::readJoints()

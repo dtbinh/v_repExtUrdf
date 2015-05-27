@@ -33,6 +33,8 @@
 
 #pragma once
 
+#include "v_repLib.h"
+
 #ifdef _WIN32
 	#define VREP_DLLEXPORT extern "C" __declspec(dllexport)
 #endif /* _WIN32 */
@@ -44,3 +46,6 @@
 VREP_DLLEXPORT unsigned char v_repStart(void* reservedPointer,int reservedInt);
 VREP_DLLEXPORT void v_repEnd();
 VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customData,int* replyData);
+
+void v_repImportUrdfCallback(SLuaCallBack* p);
+void v_repImportUrdfFileCallback(SLuaCallBack* p);

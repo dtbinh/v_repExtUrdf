@@ -56,15 +56,18 @@ public:
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLElement *robotElement;
 
-	std::string filenameAndPath;
 	std::string packagePath;
 	std::string name;
 	
 	//Functions
 	robot(std::string filename,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl);
+    robot(std::string urdf,std::string packagePath,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl);
 	~robot();
 
-	void openFile(); //opens the filenamAndPath which is given by a file dialog
+    void openString(std::string urdf); //opens a URDF from string
+    void openFile(std::string filenameAndPath); //opens the filenamAndPath which is given by a file dialog and sets packagePath
+
+    void initRobotFromDoc(bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl);
 	
 	void readJoints();
 	void readLinks();
