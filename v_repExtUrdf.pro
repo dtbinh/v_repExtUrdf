@@ -97,6 +97,7 @@ SOURCES += \
     ../v_repMath/7Vector.cpp \
     ../v_repMath/MyMath.cpp \
     ../common/v_repLib.cpp \
+    rospackagehelper.cpp
 
 HEADERS +=\
 	v_repExtUrdf.h \
@@ -115,6 +116,7 @@ HEADERS +=\
     ../v_repMath/7Vector.h \
     ../v_repMath/MyMath.h \
     ../include/v_repLib.h \
+    rospackagehelper.h
 
 unix:!symbian {
     maemo5 {

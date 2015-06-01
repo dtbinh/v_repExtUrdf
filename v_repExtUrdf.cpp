@@ -116,21 +116,33 @@ VREP_DLLEXPORT unsigned char v_repStart(void* reservedPointer,int reservedInt)
 	simSetModuleMenuItemState(urdfDialog->dialogMenuItemHandle,1,"URDF import...");
 
     int inputArgsTypes[] = {
-        11,
+        10,
         sim_lua_arg_string, // URDF contents
-        sim_lua_arg_string, // abs path to the package folder
         sim_lua_arg_bool, // assign collision links to layer 9
         sim_lua_arg_bool, // assign joints to layer 10
         sim_lua_arg_bool, // convex decompose
-        sim_lua_arg_bool, // show convex decomposition dialog
         sim_lua_arg_bool, // create visual links if none
+        sim_lua_arg_bool, // show convex decomposition dialog
         sim_lua_arg_bool, // center model above ground
         sim_lua_arg_bool, // prepare model definition if feasible
         sim_lua_arg_bool, // alternate local respondable masks
         sim_lua_arg_bool  // enable position control for revolute and prismatic joints
     };
 
-    simRegisterCustomLuaFunction("simExtImportUrdf", "Import a URDF model", inputArgsTypes, v_repImportUrdfCallback);
+    simRegisterCustomLuaFunction("simExtImportUrdf",
+        "string robot_name=simExtImportUrdf("
+         "string urdf,"
+         "bool hideCollisionLinks,"
+         "bool hideJoints,"
+         "bool convexDecomposeNonConvexCollidables,"
+         "bool createVisualIfNone,"
+         "bool showConvexDecompositionDlg,"
+         "bool centerAboveGround,"
+         "bool makeModel,"
+         "bool noSelfCollision,"
+         "bool positionCtrl"
+        ")",
+        inputArgsTypes, v_repImportUrdfCallback);
 
     int inputArgsTypesFile[] = {
         10,
@@ -138,15 +150,28 @@ VREP_DLLEXPORT unsigned char v_repStart(void* reservedPointer,int reservedInt)
         sim_lua_arg_bool, // assign collision links to layer 9
         sim_lua_arg_bool, // assign joints to layer 10
         sim_lua_arg_bool, // convex decompose
-        sim_lua_arg_bool, // show convex decomposition dialog
         sim_lua_arg_bool, // create visual links if none
+        sim_lua_arg_bool, // show convex decomposition dialog
         sim_lua_arg_bool, // center model above ground
         sim_lua_arg_bool, // prepare model definition if feasible
         sim_lua_arg_bool, // alternate local respondable masks
         sim_lua_arg_bool  // enable position control for revolute and prismatic joints
     };
 
-    simRegisterCustomLuaFunction("simExtImportUrdfFile", "Import a URDF model from a file", inputArgsTypesFile, v_repImportUrdfFileCallback);
+    simRegisterCustomLuaFunction("simExtImportUrdfFile",
+         "string robot_name=simExtImportUrdf("
+          "string fileAndPath,"
+          "bool hideCollisionLinks,"
+          "bool hideJoints,"
+          "bool convexDecomposeNonConvexCollidables,"
+          "bool createVisualIfNone,"
+          "bool showConvexDecompositionDlg,"
+          "bool centerAboveGround,"
+          "bool makeModel,"
+          "bool noSelfCollision,"
+          "bool positionCtrl"
+         ")",
+         inputArgsTypesFile, v_repImportUrdfCallback);
 
 	return(PLUGIN_VERSION); // initialization went fine, we return the version number of this plugin (can be queried with simGetModuleName)
 }
@@ -214,33 +239,21 @@ VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customDat
 
 void v_repImportUrdfCallback(SLuaCallBack* p)
 {
-    if (p->inputArgCount == 11) {
-        // parsing the p->inputChar; it contains all string args separated by null bytes
-        // the std::string constructor just eats up everything up to the first null byte
-        char* inputChar = p->inputChar;
-
-        std::string urdf(inputChar);
-        // now we advance the string pointer by the number of characters read from the first arg
-        inputChar += urdf.size()+1;
-        std::string packagePath(inputChar);
-
-        robot Robot(urdf,packagePath,p->inputBool[0],p->inputBool[1],p->inputBool[2],p->inputBool[3],
-                    p->inputBool[4],p->inputBool[5],p->inputBool[6],p->inputBool[7],p->inputBool[8]);
-
-    } else {
-        simSetLastError("simExtImportUrdfCallback","Wrong number of arguments.");
-    }
-    p->outputArgCount = 0;
-}
-
-void v_repImportUrdfFileCallback(SLuaCallBack* p)
-{
     if (p->inputArgCount == 10) {
         robot Robot(p->inputChar,p->inputBool[0],p->inputBool[1],p->inputBool[2],p->inputBool[3],
                     p->inputBool[4],p->inputBool[5],p->inputBool[6],p->inputBool[7],p->inputBool[8]);
 
+        p->outputArgCount = 1;
+
+        p->outputArgTypeAndSize = (simInt*)simCreateBuffer(p->outputArgCount*2*sizeof(simInt));
+        p->outputArgTypeAndSize[0] = sim_lua_arg_string;
+        p->outputArgTypeAndSize[1] = 1;
+
+        p->outputChar = (simChar*)simCreateBuffer(Robot.name.length()+1);
+        memcpy((void*)p->outputChar, (void*)Robot.name.c_str(), Robot.name.length()+1);
+
     } else {
         simSetLastError("simExtImportUrdfCallback","Wrong number of arguments.");
+        p->outputArgCount = 0;
     }
-    p->outputArgCount = 0;
 }

@@ -36,17 +36,15 @@
 #include <string>
 
 
-robot::robot(std::string filename,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl)
+robot::robot(std::string filenameOrUrdf,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl)
 {
     printToConsole("URDF import operation started.");
-    openFile(filename);
-    this->initRobotFromDoc(hideCollisionLinks, hideJoints, convexDecomposeNonConvexCollidables, createVisualIfNone, showConvexDecompositionDlg, centerAboveGround, makeModel, noSelfCollision, positionCtrl);
-}
+    if (filenameOrUrdf.compare(0, 5, "<?xml") == 0) {
+        openString(filenameOrUrdf);
+    } else {
+        openFile(filenameOrUrdf);
+    }
 
-robot::robot(std::string urdf,std::string packagePath,bool hideCollisionLinks,bool hideJoints,bool convexDecomposeNonConvexCollidables,bool createVisualIfNone,bool showConvexDecompositionDlg,bool centerAboveGround,bool makeModel,bool noSelfCollision,bool positionCtrl): packagePath(packagePath)
-{
-    printToConsole("URDF import operation started.");
-    openString(urdf);
     this->initRobotFromDoc(hideCollisionLinks, hideJoints, convexDecomposeNonConvexCollidables, createVisualIfNone, showConvexDecompositionDlg, centerAboveGround, makeModel, noSelfCollision, positionCtrl);
 }
 
@@ -232,13 +230,6 @@ void robot::openFile(std::string filenameAndPath)
         printToConsole("ERROR: file couldn't be opened.");
         return;
     }
-
-	//Set the path to the package
-	//TODO  we could try to read the manifiest to be sure this is the correct path to the package
-	int cutPackagePath = filenameAndPath.find_last_of("/");
-	packagePath=filenameAndPath.substr(0,cutPackagePath);
-	cutPackagePath = packagePath.find_last_of("/");
-	packagePath=packagePath.substr(0,cutPackagePath);  //I do it twice to get  N:/drcsim-1.3/models/ so I can replace it for package://
 }
 
 void robot::readJoints()
@@ -378,7 +369,7 @@ void robot::readLinks()
 				if(visual_geometry_meshElement!=NULL)
 				{
 					if (visual_geometry_meshElement->Attribute("filename") != NULL)
-						Link->setMeshFilename(packagePath,visual_geometry_meshElement->Attribute("filename"),"visual");
+                        Link->setMeshFilename(visual_geometry_meshElement->Attribute("filename"),"visual");
 					if (visual_geometry_meshElement->Attribute("scale") != NULL)
 						stringToArray(Link->currentVisual().mesh_scaling,visual_geometry_meshElement->Attribute("scale"));
 				}
@@ -435,7 +426,7 @@ void robot::readLinks()
 				if(collision_geometry_meshElement!=NULL)
 				{
 					if (collision_geometry_meshElement->Attribute("filename") != NULL)
-						Link->setMeshFilename(packagePath,collision_geometry_meshElement->Attribute("filename"),"collision");
+                        Link->setMeshFilename(collision_geometry_meshElement->Attribute("filename"),"collision");
 					if (collision_geometry_meshElement->Attribute("scale") != NULL)
                         stringToArray(Link->currentCollision().mesh_scaling,collision_geometry_meshElement->Attribute("scale"));
 				}

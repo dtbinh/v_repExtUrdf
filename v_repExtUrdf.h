@@ -48,4 +48,3 @@ VREP_DLLEXPORT void v_repEnd();
 VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customData,int* replyData);
 
 void v_repImportUrdfCallback(SLuaCallBack* p);
-void v_repImportUrdfFileCallback(SLuaCallBack* p);

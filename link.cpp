@@ -32,6 +32,7 @@
 // The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc and Martin Pecka.
 
 #include "link.h"
+#include "rospackagehelper.h"
 	
 urdfVisualOrCollision::urdfVisualOrCollision()
 {
@@ -195,17 +196,29 @@ void urdfLink::verifyInertia()
 	}
 }
 
-void urdfLink::setMeshFilename(std::string packagePath,std::string meshFilename,std::string choose)
+void urdfLink::setMeshFilename(std::string meshFilename,std::string choose)
 {
 	std::string meshFilename_alt; // we use an alternative filename... the package location is somewhat strangely defined sometimes!!
 	if (meshFilename.compare(0,10,"package://")==0) // condition added by Marc on 17/1/2014
 	{
-		meshFilename = meshFilename.substr(9,meshFilename.size()); //to delete de package:/ part
-		meshFilename_alt=meshFilename;
-		meshFilename = packagePath + meshFilename;
-		packagePath = packagePath.substr(0, packagePath.find_last_of("/"));
-		meshFilename_alt = packagePath + meshFilename_alt;
-	}
+        meshFilename = meshFilename.substr(10,meshFilename.size()); //to delete de package:// part
+        size_t packageNameEndPos = meshFilename.find("/");
+        if (packageNameEndPos != std::string::npos && packageNameEndPos > 0) {
+            // extract the package name
+            std::string packageName = meshFilename.substr(0, packageNameEndPos);
+
+            // get the root dir the packageName is relative to (can be different for different packages,
+            // e.g. in multi-workspace setups)
+            std::string packageRootDir = rosPackageHelper::getPackageRootDir(packageName);
+
+            if (packageRootDir.length() > 0) {
+                meshFilename_alt = packageRootDir + std::string("/../") + meshFilename;
+                meshFilename = packageRootDir + std::string("/") + meshFilename;
+            }
+        } else {
+            printToConsole("Could not decode package name from the mesh file specification.");
+        }
+    }
 
 	std::string extension = meshFilename.substr(meshFilename.size()-3,meshFilename.size());
 	int nExtension;
@@ -261,9 +274,21 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
             }
 
             if (!exists)
-                printToConsole("ERROR: the mesh file could not be found.");
-            else
-                visual.n = simImportShape(visual.meshExtension,fname.c_str(),0,0.0001f,1.0);
+                if (!useAlt)
+                    printToConsole(("ERROR: mesh file '"+visual.meshFilename+"' does not exist.").c_str());
+                else
+                    printToConsole(("ERROR: neither mesh file '"+visual.meshFilename+"' nor '"+visual.meshFilename_alt+"' do exist.").c_str());
+            else {
+                printToConsole("Importing");
+                printToConsole(fname.c_str());
+                try {
+                    visual.n = simImportShape(visual.meshExtension,fname.c_str(),0,0.0001f,1.0f);
+                } catch (std::exception& e) {
+                    printToConsole(e.what());
+                } catch (...) {
+                    printToConsole("Exception caught while importing the mesh file.");
+                }
+            }
 
             if (!visual.n)
             {
@@ -301,7 +326,10 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
             }
 
             if (!exists)
-                printToConsole("ERROR: the mesh file could not be found");
+                if (!useAlt)
+                    printToConsole(("ERROR: mesh file '"+collision.meshFilename+"' does not exist.").c_str());
+                else
+                    printToConsole(("ERROR: neither mesh file '"+collision.meshFilename+"' nor '"+collision.meshFilename_alt+"' do exist.").c_str());
             else
                 collision.n = simImportShape(collision.meshExtension,fname.c_str(),0,0.0001f,1.0);
 
