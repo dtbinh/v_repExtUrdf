@@ -343,15 +343,23 @@ void urdfLink::createLink(bool hideCollisionLinks,bool convexDecomposeNonConvexC
         simSetObjectIntParameter(collision.n,3019,0xff00); // colliding with everything except with other objects in that tree hierarchy
     }
 
-    if (createVisualIfNone&&(visuals.size()==0)&&(collisions.size() > 0))
-    { // We create a visual from the collision shapes
-        for (it=collisions.begin(); it!=collisions.end(); it++) {
-            urdfVisualOrCollision &collision = *it;
-            simRemoveObjectFromSelection(sim_handle_all,-1);
-            simAddObjectToSelection(sim_handle_single,collision.n);
-            simCopyPasteSelectedObjects();
+    if (createVisualIfNone&&(visuals.size()==0))
+    {
+        if (collisions.size() > 0)
+        { // We create a visual from the collision shapes
+            for (it=collisions.begin(); it!=collisions.end(); it++) {
+                urdfVisualOrCollision &collision = *it;
+                simRemoveObjectFromSelection(sim_handle_all,-1);
+                simAddObjectToSelection(sim_handle_single,collision.n);
+                simCopyPasteSelectedObjects();
+                addVisual();
+                currentVisual().n = simGetObjectLastSelection();
+            }
+        } else
+        { // This is an empty link (no visual and no collision); create a dummy visual
+            float dummySize[3]={0.0005f,0.0005f,0.0005f};
             addVisual();
-            currentVisual().n = simGetObjectLastSelection();
+            currentVisual().n = simCreatePureShape( 0,1+16, dummySize, 0.00001f, NULL);
         }
     }
 
