@@ -1,6 +1,6 @@
 // This file is part of the URDF PLUGIN for V-REP
 //  
-// Copyright 2006-2014 Coppelia Robotics GmbH. All rights reserved. 
+// Copyright 2006-2015 Coppelia Robotics GmbH. All rights reserved. 
 // marc@coppeliarobotics.com
 // www.coppeliarobotics.com
 // 
@@ -27,9 +27,9 @@
 // -------------------------------------------------------------------
 
 //
-// This file was automatically created for V-REP release V3.2.0 on Feb. 3rd 2015
+// This file was automatically created for V-REP release V3.2.1 on May 3rd 2015
 
-// The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc.
+// The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc and Martin Pecka.
 
 #include "robot.h"
 #include <bitset>
@@ -52,20 +52,15 @@ robot::robot(std::string filename,bool hideCollisionLinks,bool hideJoints,bool c
 	std::vector<int> allSensors;
 	for (int i=0;i<int(vLinks.size());i++)
 	{
-		if (vLinks[i]->nLinkVisual!=-1)
-		{
-			if (simGetObjectParent(vLinks[i]->nLinkVisual)==-1)
-				parentlessObjects.push_back(vLinks[i]->nLinkVisual);
-			allObjects.push_back(vLinks[i]->nLinkVisual);
-			allShapes.push_back(vLinks[i]->nLinkVisual);
-		}
-		if (vLinks[i]->nLinkCollision!=-1)
-		{
-			if (simGetObjectParent(vLinks[i]->nLinkCollision)==-1)
-				parentlessObjects.push_back(vLinks[i]->nLinkCollision);
-			allObjects.push_back(vLinks[i]->nLinkCollision);
-			allShapes.push_back(vLinks[i]->nLinkCollision);
-		}
+        if (simGetObjectParent(vLinks[i]->nLinkVisual)==-1)
+            parentlessObjects.push_back(vLinks[i]->nLinkVisual);
+        allObjects.push_back(vLinks[i]->nLinkVisual);
+        allShapes.push_back(vLinks[i]->nLinkVisual);
+
+        if (simGetObjectParent(vLinks[i]->nLinkCollision)==-1)
+            parentlessObjects.push_back(vLinks[i]->nLinkCollision);
+        allObjects.push_back(vLinks[i]->nLinkCollision);
+        allShapes.push_back(vLinks[i]->nLinkCollision);
 	}
 	for (int i=0;i<int(vJoints.size());i++)
 	{
@@ -339,9 +334,11 @@ void robot::readLinks()
 		}
 
 	    //VISUAL
-		tinyxml2::XMLElement* visualElement = linkElement->FirstChildElement("visual");
-		if(visualElement != NULL)
+		tinyxml2::XMLNode* visualElement = linkElement->FirstChildElement("visual");
+		while(visualElement != NULL)
 		{
+            Link->addVisual();
+
 			tinyxml2::XMLElement* visual_originElement = visualElement->FirstChildElement("origin");
 			if(visual_originElement != NULL)
 			{
@@ -361,7 +358,7 @@ void robot::readLinks()
 					if (visual_geometry_meshElement->Attribute("filename") != NULL)
 						Link->setMeshFilename(packagePath,visual_geometry_meshElement->Attribute("filename"),"visual");
 					if (visual_geometry_meshElement->Attribute("scale") != NULL)
-						stringToArray(Link->visual_mesh_scaling,visual_geometry_meshElement->Attribute("scale"));
+						stringToArray(Link->currentVisual().mesh_scaling,visual_geometry_meshElement->Attribute("scale"));
 				}
 				tinyxml2::XMLElement* visual_geometry_boxElement = visual_geometryElement->FirstChildElement("box");
 				if(visual_geometry_boxElement!=NULL)
@@ -391,11 +388,14 @@ void robot::readLinks()
 						Link->setColor(visual_geometry_colorElement->Attribute("rgba"));
 				}
 			}
+            visualElement = visualElement->NextSiblingElement();
 		}
 		//COLLISION
-		tinyxml2::XMLElement* collisionElement = linkElement->FirstChildElement("collision");
-		if(collisionElement != NULL)
+        tinyxml2::XMLNode* collisionElement = linkElement->FirstChildElement("collision");
+        while(collisionElement != NULL)
 		{
+            Link->addCollision();
+
 			tinyxml2::XMLElement* collision_originElement = collisionElement->FirstChildElement("origin");
 			if(collision_originElement != NULL)
 			{
@@ -415,7 +415,7 @@ void robot::readLinks()
 					if (collision_geometry_meshElement->Attribute("filename") != NULL)
 						Link->setMeshFilename(packagePath,collision_geometry_meshElement->Attribute("filename"),"collision");
 					if (collision_geometry_meshElement->Attribute("scale") != NULL)
-						stringToArray(Link->collision_mesh_scaling,collision_geometry_meshElement->Attribute("scale"));
+                        stringToArray(Link->currentCollision().mesh_scaling,collision_geometry_meshElement->Attribute("scale"));
 				}
 				tinyxml2::XMLElement* collision_geometry_boxElement = collision_geometryElement->FirstChildElement("box");
 				if(collision_geometry_boxElement!=NULL)
@@ -437,6 +437,7 @@ void robot::readLinks()
 				} 
 
 			}
+            collisionElement = collisionElement->NextSiblingElement();
 		}
 		
 		vLinks.push_back(Link);
@@ -718,14 +719,24 @@ void robot::createLinks(bool hideCollisionLinks,bool convexDecomposeNonConvexCol
 			if (Link->nLinkCollision!=-1)
 			{
 				effectiveLinkHandle=Link->nLinkCollision;
-				linkDesiredConf.X.set(Link->collision_xyz);
-				linkDesiredConf.Q=getQuaternionFromRpy(Link->collision_rpy);
+                if (effectiveLinkHandle != -1) {
+                    // Collision object position and orientation is already set in the Link
+                    float xyz[3] = {0,0,0};
+                    float rpy[3] = {0,0,0};
+                    linkDesiredConf.X.set(xyz);
+                    linkDesiredConf.Q=getQuaternionFromRpy(rpy);
+                }
 			}
 			else
 			{
-				effectiveLinkHandle=Link->nLinkVisual;
-				linkDesiredConf.X.set(Link->visual_xyz);
-				linkDesiredConf.Q=getQuaternionFromRpy(Link->visual_rpy);
+				effectiveLinkHandle = Link->nLinkVisual;
+                if (effectiveLinkHandle != -1) {
+                    // Visual object position and orientation is already set in the Link
+                    float xyz[3] = {0,0,0};
+                    float rpy[3] = {0,0,0};
+                    linkDesiredConf.X.set(xyz);
+                    linkDesiredConf.Q=getQuaternionFromRpy(rpy);
+                }
 			}
 			simGetObjectPosition(effectiveLinkHandle,-1,linkInitialConf.X.data);
 			C3Vector euler;
@@ -840,9 +851,9 @@ void robot::createSensors()
 				}
 				if ((parentLinkIndex!=-1)&&(Sensor->nSensor!=-1))
 				{
-					if (vLinks.at(parentLinkIndex)->nLinkVisual!=-1)
+					if (vLinks.at(parentLinkIndex)->visuals.size()!=0)
 						simSetObjectParent(Sensor->nSensor,vLinks.at(parentLinkIndex)->nLinkVisual,true);
-					if (vLinks.at(parentLinkIndex)->nLinkCollision!=-1)
+                    if (vLinks.at(parentLinkIndex)->collisions.size()!=0)
 						simSetObjectParent(Sensor->nSensor,vLinks.at(parentLinkIndex)->nLinkCollision,true);
 				}
 			}

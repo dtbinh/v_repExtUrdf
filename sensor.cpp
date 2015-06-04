@@ -1,6 +1,6 @@
 // This file is part of the URDF PLUGIN for V-REP
 //  
-// Copyright 2006-2014 Coppelia Robotics GmbH. All rights reserved. 
+// Copyright 2006-2015 Coppelia Robotics GmbH. All rights reserved. 
 // marc@coppeliarobotics.com
 // www.coppeliarobotics.com
 // 
@@ -27,7 +27,7 @@
 // -------------------------------------------------------------------
 
 //
-// This file was automatically created for V-REP release V3.2.0 on Feb. 3rd 2015
+// This file was automatically created for V-REP release V3.2.1 on May 3rd 2015
 
 // The URDF plugin is courtesy of Ignacio Tartavull. A few modifications by Marc.
 
