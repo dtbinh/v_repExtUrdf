@@ -237,10 +237,20 @@ VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customDat
 	return(retVal);
 }
 
+VREP_DLLEXPORT simChar* v_repImportUrdf(simChar* filenameOrUrdf, simBool hideCollisionLinks, simBool hideJoints, simBool convexDecomposeNonConvexCollidables, simBool createVisualIfNone, simBool showConvexDecompositionDlg, simBool centerAboveGround, simBool makeModel, simBool noSelfCollision, simBool positionCtrl) {
+
+    robot Robot(filenameOrUrdf, hideCollisionLinks, hideJoints, convexDecomposeNonConvexCollidables, createVisualIfNone, showConvexDecompositionDlg, centerAboveGround, makeModel, noSelfCollision, positionCtrl);
+
+    simChar* result = (simChar*)simCreateBuffer(Robot.name.length()+1);
+    memcpy((void*) result, (void*) Robot.name.c_str(), Robot.name.length()+1);
+
+    return result;
+} 
+
 void v_repImportUrdfCallback(SLuaCallBack* p)
 {
     if (p->inputArgCount == 10) {
-        robot Robot(p->inputChar,p->inputBool[0],p->inputBool[1],p->inputBool[2],p->inputBool[3],
+        simChar* name = v_repImportUrdf(p->inputChar,p->inputBool[0],p->inputBool[1],p->inputBool[2],p->inputBool[3],
                     p->inputBool[4],p->inputBool[5],p->inputBool[6],p->inputBool[7],p->inputBool[8]);
 
         p->outputArgCount = 1;
@@ -249,8 +259,8 @@ void v_repImportUrdfCallback(SLuaCallBack* p)
         p->outputArgTypeAndSize[0] = sim_lua_arg_string;
         p->outputArgTypeAndSize[1] = 1;
 
-        p->outputChar = (simChar*)simCreateBuffer(Robot.name.length()+1);
-        memcpy((void*)p->outputChar, (void*)Robot.name.c_str(), Robot.name.length()+1);
+        p->outputChar = (simChar*)simCreateBuffer(strlen(name)+1);
+        memcpy((void*)p->outputChar, (void*)name, strlen(name)+1);
 
     } else {
         simSetLastError("simExtImportUrdfCallback","Wrong number of arguments.");

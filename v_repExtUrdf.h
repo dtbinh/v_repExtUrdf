@@ -34,6 +34,7 @@
 #pragma once
 
 #include "v_repLib.h"
+#include <string>
 
 #ifdef _WIN32
 	#define VREP_DLLEXPORT extern "C" __declspec(dllexport)
@@ -48,3 +49,4 @@ VREP_DLLEXPORT void v_repEnd();
 VREP_DLLEXPORT void* v_repMessage(int message,int* auxiliaryData,void* customData,int* replyData);
 
 void v_repImportUrdfCallback(SLuaCallBack* p);
+VREP_DLLEXPORT simChar* v_repImportUrdf(simChar* filenameOrUrdf, simBool hideCollisionLinks, simBool hideJoints, simBool convexDecomposeNonConvexCollidables, simBool createVisualIfNone, simBool showConvexDecompositionDlg, simBool centerAboveGround, simBool makeModel, simBool noSelfCollision, simBool positionCtrl); 
